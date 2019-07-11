@@ -1,0 +1,16 @@
+{
+  "name": "Blish HUD Debug Assistant",
+  "version": "0.1.1",
+  "namespace": "bh.more.debug",
+  "package": "Debug Module.dll",
+  "manifest_version": 1,
+
+  "description": "Adds some features that can help make it easier to debug Blish HUD.",
+  "dependencies": {
+  },
+  "url": "https://github.com/blish-hud/Blish-HUD",
+  "author": {
+    "name": "Freesnöw",
+    "username": "LandersXanders.1235"
+  }
+}
