@@ -64,6 +64,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -80,17 +81,27 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="RuntimeToolbox.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="RuntimeToolbox.Designer.cs">
+      <DependentUpon>RuntimeToolbox.cs</DependentUpon>
+    </Compile>
     <Compile Include="Tools\ControlScreenshot\ControlScreenshot.cs" />
     <Compile Include="Tools\ControlScreenshot\HighlightControl.cs" />
     <Compile Include="Utils\ArrayUtils.cs" />
     <Compile Include="Utils\ClipboardUtils.cs" />
     <Compile Include="Utils\ImageUtils.cs" />
+    <Compile Include="_Extensions\TreeNodeCollectionExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RuntimeToolbox.resx">
+      <DependentUpon>RuntimeToolbox.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="BuildScripts\CopyRef.ps1" />
     <None Include="BuildScripts\PackageModule.ps1" />

@@ -26,6 +26,11 @@ namespace Debug_Module {
     [Export(typeof(Module))]
     public class DebugModule : Module {
 
+        /* TODO:
+         * - Make each tool an actual Tool class instance so that they can be loaded, enabled/disabled, etc. in a less spaghetti way.
+         * - Make control selector tween from last position instead of jutting out like it currently is.
+         */
+
         internal static DebugModule ModuleInstance;
 
         // Service Managers
@@ -34,9 +39,14 @@ namespace Debug_Module {
         internal DirectoriesManager DirectoriesManager => this.ModuleParameters.DirectoriesManager;
         internal Gw2ApiManager      Gw2ApiManager      => this.ModuleParameters.Gw2ApiManager;
 
+        // Settings
+        private SettingEntry<bool> _showToolbox;
+
         // Controls (be sure to dispose of these in Unload()
         private CornerIcon       _debugIcon;
         private ContextMenuStrip _debugContextMenuStrip;
+
+        private RuntimeToolbox _toolboxForm;
 
         private Tools.ControlScreenshot.HighlightControl _controlHighlighter;
 
@@ -50,7 +60,7 @@ namespace Debug_Module {
 
         /// <inheritdoc />
         protected override void DefineSettings(SettingCollection settings) {
-
+            _showToolbox = settings.DefineSetting("ShowToolbox", false);
         }
 
         protected override void Initialize() {
@@ -67,12 +77,35 @@ namespace Debug_Module {
 
             var screenshotAction = _debugContextMenuStrip.AddMenuItem("Take Screenshot of Control");
             var magentaAction    = _debugContextMenuStrip.AddMenuItem("Mark Control Bounds");
+            var showToolbox      = _debugContextMenuStrip.AddMenuItem("Show Toolbox");
+
+            showToolbox.CanCheck = true;
 
             _controlHighlighter = new Tools.ControlScreenshot.HighlightControl() {Visible = false};
             _controlHighlighter.Parent = GameService.Graphics.SpriteScreen;
 
             screenshotAction.Click += delegate { _screenshotActive    = true; };
             magentaAction.Click    += delegate { _magentaTargetActive = true; };
+
+            showToolbox.CheckedChanged += delegate {
+                if (showToolbox.Checked) {
+                    if (_toolboxForm == null || _toolboxForm.IsDisposed) {
+                        _toolboxForm = new RuntimeToolbox();
+                        _toolboxForm.FormClosed += delegate { _showToolbox.Value = false; };
+                    }
+                    _toolboxForm.Show();
+                } else {
+                    _toolboxForm.Hide();
+                }
+
+                _showToolbox.Value = showToolbox.Checked;
+            };
+
+            // Thread safety
+            GameService.Overlay.QueueMainThreadUpdate((gameTime) => {
+                _showToolbox.SettingChanged += delegate { showToolbox.Checked = _showToolbox.Value; };
+                showToolbox.Checked = _showToolbox.Value;
+            });
 
             _debugIcon.Click += delegate {
                 _debugContextMenuStrip.Show(_debugIcon);
@@ -154,6 +187,9 @@ namespace Debug_Module {
 
             _debugIcon.Dispose();
             _debugContextMenuStrip.Dispose();
+
+            _toolboxForm.Hide();
+            _toolboxForm.Dispose();
         }
 
     }
