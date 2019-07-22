@@ -50,8 +50,9 @@ namespace Debug_Module {
 
         private Tools.ControlScreenshot.HighlightControl _controlHighlighter;
 
-        private bool _screenshotActive    = false;
-        private bool _magentaTargetActive = false;
+        private bool _screenshotPickerActive    = false;
+        private bool _magentaPickerActive       = false;
+        private bool _runtimeViewerPickerActive = false;
 
         [ImportingConstructor]
         public DebugModule([Import("ModuleParameters")] ModuleParameters moduleParameters) : base(moduleParameters) {
@@ -77,15 +78,24 @@ namespace Debug_Module {
 
             var screenshotAction = _debugContextMenuStrip.AddMenuItem("Take Screenshot of Control");
             var magentaAction    = _debugContextMenuStrip.AddMenuItem("Mark Control Bounds");
+            var forceGcAction    = _debugContextMenuStrip.AddMenuItem("Force GC");
             var showToolbox      = _debugContextMenuStrip.AddMenuItem("Show Toolbox");
+
+            forceGcAction.Enabled = false;
 
             showToolbox.CanCheck = true;
 
             _controlHighlighter = new Tools.ControlScreenshot.HighlightControl() {Visible = false};
             _controlHighlighter.Parent = GameService.Graphics.SpriteScreen;
 
-            screenshotAction.Click += delegate { _screenshotActive    = true; };
-            magentaAction.Click    += delegate { _magentaTargetActive = true; };
+            screenshotAction.Click += delegate { _screenshotPickerActive    = true; };
+            magentaAction.Click    += delegate { _magentaPickerActive = true; };
+
+            forceGcAction.Click += delegate {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            };
 
             showToolbox.CheckedChanged += delegate {
                 if (showToolbox.Checked) {
@@ -111,19 +121,24 @@ namespace Debug_Module {
                 _debugContextMenuStrip.Show(_debugIcon);
             };
 
-            Control.ActiveControlChanged += ControlOnActiveControlChanged;
-            GameService.Input.LeftMouseButtonReleased += InputOnLeftMouseButtonReleased;
+            Control.ActiveControlChanged               += ControlOnActiveControlChanged;
+            GameService.Input.LeftMouseButtonReleased  += InputOnLeftMouseButtonReleased;
             GameService.Input.RightMouseButtonReleased += InputOnRightMouseButtonReleased;
         }
 
+        public void ActivateRuntimeViewerPicker() {
+            _runtimeViewerPickerActive = true;
+        }
+
         private void InputOnRightMouseButtonReleased(object sender, Blish_HUD.Input.MouseEventArgs e) {
-            _screenshotActive    = false;
-            _magentaTargetActive = false;
+            _screenshotPickerActive    = false;
+            _magentaPickerActive       = false;
+            _runtimeViewerPickerActive = false;
             _controlHighlighter.Hide();
         }
 
         private void InputOnLeftMouseButtonReleased(object sender, Blish_HUD.Input.MouseEventArgs e) {
-            if (_screenshotActive && Control.ActiveControl != null) {
+            if (_screenshotPickerActive && Control.ActiveControl != null) {
                 GameService.Graphics.QueueMainThreadRender((graphicsDevice) => {
                     var activeControl = Control.ActiveControl;
                     var absoluteBounds = activeControl.AbsoluteBounds;
@@ -160,17 +175,23 @@ namespace Debug_Module {
 
                     graphicsDevice.SetRenderTarget(null);
                 });
-            } else if (_magentaTargetActive && Control.ActiveControl != null) {
+
+                _screenshotPickerActive = false;
+            } else if (_magentaPickerActive && Control.ActiveControl != null) {
                 Control.ActiveControl.BackgroundColor = Color.Magenta;
+
+                _magentaPickerActive = false;
+            } else if (_runtimeViewerPickerActive && Control.ActiveControl != null) {
+                _toolboxForm?.SetActiveControl(Control.ActiveControl);
+
+                _runtimeViewerPickerActive = false;
             }
 
-            _screenshotActive    = false;
-            _magentaTargetActive = false;
             _controlHighlighter.Hide();
         }
 
         private void ControlOnActiveControlChanged(object sender, ControlActivatedEventArgs e) {
-            if (_screenshotActive || _magentaTargetActive)
+            if (_screenshotPickerActive || _magentaPickerActive || _runtimeViewerPickerActive)
                 _controlHighlighter.Show(Control.ActiveControl);
         }
 
